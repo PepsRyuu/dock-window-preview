@@ -1,0 +1,14 @@
+{
+    "name": "axlib",
+    "private": true,
+    "version": "0.0.1",
+    "main": "main.js",
+    "description": "Mac Accessibility Helpers.",
+    "dependencies": {
+        "bindings": "1.2.1"
+    },
+    "scripts": {
+        "build": "node-gyp build",
+        "install": "node-gyp rebuild"
+    }
+}

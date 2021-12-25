@@ -1,0 +1,7 @@
+{
+    "dependencies": {
+        "axlib": "file:axlib",
+        "gui": "^0.10.1",
+        "pngjs": "^6.0.0"
+    }
+}
