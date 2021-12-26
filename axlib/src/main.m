@@ -228,46 +228,127 @@ napi_value AXGetWindowPreview (napi_env env, napi_callback_info info) {
     // Generate the image. This will trigger permission request.
     CGImageRef img = CGWindowListCreateImage(CGRectNull, kCGWindowListOptionIncludingWindow, window, kCGWindowImageNominalResolution || kCGWindowImageBoundsIgnoreFraming);
 
-    // Scale down the image
-    int bitsPerComponent = CGImageGetBitsPerComponent(img);
-    int bytesPerRow = CGImageGetBytesPerRow(img);
-    CGColorSpaceRef colorSpace = CGImageGetColorSpace(img);
-    // TODO: Have the width and height as parameters
-    CGContextRef context = CGBitmapContextCreate(NULL, 500, 500, bitsPerComponent, bytesPerRow / CGImageGetWidth(img) * 500, colorSpace, CGImageGetBitmapInfo(img));
-    CGContextSetInterpolationQuality(context, kCGInterpolationHigh);
-    CGContextDrawImage(context, CGContextGetClipBoundingBox(context), img);
+    if (img) {
+        // Scale down the image
+        int bitsPerComponent = CGImageGetBitsPerComponent(img);
+        int bytesPerRow = CGImageGetBytesPerRow(img);
+        CGColorSpaceRef colorSpace = CGImageGetColorSpace(img);
+        // TODO: Have the width and height as parameters
+        CGContextRef context = CGBitmapContextCreate(NULL, 500, 500, bitsPerComponent, bytesPerRow / CGImageGetWidth(img) * 500, colorSpace, CGImageGetBitmapInfo(img));
+        CGContextSetInterpolationQuality(context, kCGInterpolationHigh);
+        CGContextDrawImage(context, CGContextGetClipBoundingBox(context), img);
 
-    // Get new image reference to output.
-    CGImageRef scaled_img = CGBitmapContextCreateImage(context);
+        // Get new image reference to output.
+        CGImageRef scaled_img = CGBitmapContextCreateImage(context);
 
-    // Create the object response
-    napi_value result;
-    napi_create_object(env, &result);
+        // Create the object response
+        napi_value result;
+        napi_create_object(env, &result);
 
-    // Set the width property on the object
-    napi_value result_width;
-    napi_create_int32(env, CGImageGetWidth(scaled_img), &result_width);
-    napi_set_named_property(env, result, "width", result_width);
+        // Set the width property on the object
+        napi_value result_width;
+        napi_create_int32(env, CGImageGetWidth(scaled_img), &result_width);
+        napi_set_named_property(env, result, "width", result_width);
 
-    // Set the height property on the object
-    napi_value result_height;
-    napi_create_int32(env, CGImageGetHeight(scaled_img), &result_height);
-    napi_set_named_property(env, result, "height", result_height);
+        // Set the height property on the object
+        napi_value result_height;
+        napi_create_int32(env, CGImageGetHeight(scaled_img), &result_height);
+        napi_set_named_property(env, result, "height", result_height);
 
-    // Extract the raw byte array buffer from the image
-    CFDataRef raw_data_ref = CGDataProviderCopyData(CGImageGetDataProvider(scaled_img));
-    UInt8* raw_data_bytes = (UInt8*)CFDataGetBytePtr(raw_data_ref); 
-    int raw_data_length = CFDataGetLength(raw_data_ref);
+        // Extract the raw byte array buffer from the image
+        CFDataRef raw_data_ref = CGDataProviderCopyData(CGImageGetDataProvider(scaled_img));
+        UInt8* raw_data_bytes = (UInt8*)CFDataGetBytePtr(raw_data_ref); 
+        int raw_data_length = CFDataGetLength(raw_data_ref);
 
-    // Create an instance of Buffer and attach the object response
-    napi_value result_data;
-    napi_create_buffer_copy(env, raw_data_length, raw_data_bytes, NULL, &result_data);
-    napi_set_named_property(env, result, "data", result_data);
+        // Create an instance of Buffer and attach the object response
+        napi_value result_data;
+        napi_create_buffer_copy(env, raw_data_length, raw_data_bytes, NULL, &result_data);
+        napi_set_named_property(env, result, "data", result_data);
 
-    // Clean up pointers
-    CFRelease(raw_data_ref);
+        // Clean up pointers
+        CFRelease(raw_data_ref);
 
-    return result;
+        return result;
+    }
+    
+    return NULL;
+}
+
+/**
+ * Objective-C class to avoid shared variables
+ * between C functions and Objective-C.
+ *
+ * @class WindowRaiser
+ */
+@interface WindowRaiser:NSObject
+/* method declaration */
+- (int) trigger: (int)pid window:(int)window index:(int)index;
+@end
+
+@implementation WindowRaiser
+
+/* method returning the max between two numbers */
+- (int) trigger: (int)pid window:(int)window index:(int)index {
+    // As far as I can tell, this will tell the operating system to switch to this app.
+    // https://stackoverflow.com/questions/2333078/how-to-launch-application-and-bring-it-to-front-using-cocoa-api/2334362#2334362
+    NSRunningApplication* app = [NSRunningApplication runningApplicationWithProcessIdentifier: pid];
+    [app activateWithOptions: NSApplicationActivateIgnoringOtherApps];
+
+    // After switching the app, we need to bring the correct window into focus.
+    // Due to a limitation with the accessibility API, we have to use the window index.
+    // https://stackoverflow.com/questions/47066205/macos-activate-a-window-given-its-window-id
+    AXUIElementRef element = AXUIElementCreateApplication(pid);
+
+    if (element) {
+        CFArrayRef array;
+        AXUIElementCopyAttributeValues(element, kAXWindowsAttribute, 0, 99999, &array);
+
+        if (array == NULL) {
+            return 0;
+        }
+
+        NSArray *windows = (NSArray *)CFBridgingRelease(array);
+        AXUIElementRef ref = (__bridge AXUIElementRef)windows[index];
+        AXError error = AXUIElementPerformAction(ref, kAXRaiseAction);
+    }
+
+    return 0; 
+}
+
+@end
+
+/**
+ * Tries to raise the selected window.
+ *
+ * @method AXRaiseAppWindow
+ * @param {int} pid
+ * @param {int} window
+ * @param {int} window_index
+ */
+napi_value AXRaiseAppWindow (napi_env env, napi_callback_info info) {
+    // Extract function arguments
+    size_t argc = 3;
+    napi_value args[3];
+    napi_get_cb_info(env, info, &argc, &args, NULL, NULL);
+
+    // Extract the parameters
+    int pid;
+    int window;
+    int index;
+    napi_get_value_int64(env, args[0], &pid);
+    napi_get_value_int64(env, args[1], &window);
+    napi_get_value_int64(env, args[2], &index);
+
+    // This might look bizarre. Why create a separate class?
+    // I think there's an C/ObjC interop issue? If I inline all of the code from this class into this function, the pid value will reset to 0.
+    // Sometimes uncommenting and commenting unrelated lines of code also makes it work again.
+    // I suspect because there's an int that's manipulated on a low-level by a C function, even if ObjC is called much later
+    // it will refuse to use it, and instead reset to an empty value of 0.
+    // Somehow this works around the issue. If anyone can explain this to me, it would be much appreciated.
+    WindowRaiser* raiser = [[WindowRaiser alloc]init];
+    [raiser trigger:pid window:window index:index];
+
+    return NULL;
 }
 
 /**
@@ -300,6 +381,10 @@ napi_value init (napi_env env, napi_value exports) {
     napi_value fn_AXGetMousePosition;
     napi_create_function(env, NULL, 0, AXGetMousePosition, NULL, &fn_AXGetMousePosition);
     napi_set_named_property(env, exports, "AXGetMousePosition", fn_AXGetMousePosition);
+
+    napi_value fn_AXRaiseAppWindow;
+    napi_create_function(env, NULL, 0, AXRaiseAppWindow, NULL, &fn_AXRaiseAppWindow);
+    napi_set_named_property(env, exports, "AXRaiseAppWindow", fn_AXRaiseAppWindow);
 
     return exports;
 }

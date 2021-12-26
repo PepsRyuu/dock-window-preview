@@ -1,26 +1,49 @@
 # Dock Window Preview
 
-Adds window preview functionality for Mac Dock, an open-source alternative to HyperDock / DockView.
+Adds window preview functionality on hover for Mac Dock, an open-source alternative.
 
-I've recently had to start using a Macbook for work, and it's been very difficult to multi-task effectively without the window management features that Windows provide. AltTab and Rectangle are great to provide visual tabbing and snapping, but there doesn't appear to be an open-source option for adding previews to the dock. While there is HyperDock and DockView, they are paid closed-source applications for what should be a relatively simple feature. Also due to the closed source nature of them, there has been issues with their development. This project aims to be an open-source alternative so anyone can use this for free and customise as needed.
+*This is very early in development and it will be buggy. Use at your own risk.*
 
-This is still very early in development with a long way to go.
+## Motivation
 
-## Notes
+A long-time Windows user here, and I recently had to start using a Macbook, which has been a frustrating experience.
+Thankfully, most of my needs as a Windows user are satisfied thanks to AltTab, Rectangle and Karabiner, but I noticed there didn't appear to be any viable option for window previewing on the dock.
+The only options seemed to be old paid closed source applications (eg. HyperDock), with no guarantee they were going to work properly at all and didn't seem well supported.
+So after a lot of research, I decided to give it a try myself and to give it away for free.
 
-* My knowledge of Objective-C and the Mac SDK is very limited. There's probably better ways of approaching things.
-* Working in JavaScript allows me to quickly prototype new ideas, and it makes contributions for others easier.
-* Terminal needs both Screen Recording and Accessibility privileges. This is dangerous but it's temporary for initial development.
+## Getting Started
 
-## TODO
+* Ensure you have NodeJS installed. 
+* If Node is not installed, use ```brew install nvm``` and install at least 14 using ```nvm install 14``` and ```nvm use 14```.
+* Run ```npm install```, and then ```npm run build```.
+* App will be compiled to ```out``` directory.
+* Configure ```config.json``` with additional app aliases as required.
+* Run the app.
+* Open ```Security & Privacy``` and grant ```Files and Folders```, ```Accessibility``` and ```Screen Recording``` permissions.
 
-* Don't hide the preview when moving away from the dock icon.
-* Keep aspect ratio of images correct.
-* Allow to click on image to show that window.
-* Ability to close and minimize windows from preview
-* Keyboard controls.
-* Multiple monitors.
-* Hide from the Dock this app.
-* Apply GPLv3 license.
-* Permissions management. Avoid terminal using these permissions.
-* App packaging.
+## For developers
+
+* For permissions, grant the same permissions to ```Terminal```.
+* Use ```node index.js``` to run.
+* Use ```node index.js --debug``` for additional logging information.
+* For context, I mostly write front-end applications, so I prefer to work with JavaScript where possible.
+* My knowledge of Objective-C is incredibly basic. There's probably better ways of accomplishing certain things.
+* This approach I'm inclined to stick with, as it makes it significantly easier for other people to modify the app and contribute.
+
+## Troubleshooting
+
+* If you rebuild the app, force quit the app using the Activity Monitor, and wipe out the permissions entirely, then run the app again.
+
+## Task List
+
+* Filter out Finder windows that cause crashes.
+* Show preview for minimized windows.
+* Fix issue where when interacting with a second monitor, accessibility API fails to detect hover over dock.
+    * The dock from the accessibility API perspective seems to be above where the dock is visually.
+* Keyboard Controls.
+* Nicer permissions user experience.
+* MenuBar Icon for configuring.
+* Minimize and close windows from the previews.
+* Improve performance of rendering of thumbnails and CPU usage for mouse tracking.
+* Custom theming with the config file.
+* Once there's a great user experience, investigate how to contribute to brew.

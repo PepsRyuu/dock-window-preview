@@ -1,7 +1,22 @@
 {
+    "name": "dock-window-preview",
+    "private": true,
+    "version": "0.0.1",
+    "scripts": {
+        "build": "yackage build out/ && cp config.json out/config.json"
+    },
     "dependencies": {
         "axlib": "file:axlib",
+        "fetch-yode": "^1.0.3",
         "gui": "^0.10.1",
         "pngjs": "^6.0.0"
+    },
+    "devDependencies": {
+        "yackage": "^0.6.0"
+    },
+    "build": {
+        "appId": "com.pepsryuu.dock-window-preview",
+        "productName": "Dock Window Preview",
+        "copyright": "Copyright © 2021 PepsRyuu"
     }
 }
