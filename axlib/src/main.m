@@ -45,8 +45,18 @@ napi_value AXGetMousePosition (napi_env env, napi_callback_info info) {
     napi_create_int32(env, mouseLocation.x, &result_x);
     napi_set_named_property(env, result, "x", result_x);
 
-    // Set "y" property. Inverse the y value based on screen height.
-    int y = [[NSScreen mainScreen] frame].size.height - mouseLocation.y;
+    // All of the mouse co-ordinates for multiple monitors are based on the primary screen.
+    // So if you have monitor A (1080) to your left, and monitor B to the right (1200), arranged in such a way 
+    // that they are both vertically aligned to the top, if your mouse was on B at the bottom, it would 
+    // report a position of -120 for the Y value. 
+    //
+    // The accessibility API uses the inverse, so we need to convert this Y value to something it understands.
+    // To do this, we take the first primary display, and get it's height. 
+    // So using the above example: 1080 - (-120) = 1200.
+    CGFloat primary_display_height = NSMaxY([[[NSScreen screens] firstObject] frame]);
+    int y = primary_display_height - mouseLocation.y;
+
+    // Set "y" property
     napi_value result_y;
     napi_create_int32(env, y, &result_y);
     napi_set_named_property(env, result, "y", result_y);
@@ -281,13 +291,11 @@ napi_value AXGetWindowPreview (napi_env env, napi_callback_info info) {
  * @class WindowRaiser
  */
 @interface WindowRaiser:NSObject
-/* method declaration */
 - (int) trigger: (int)pid window:(int)window index:(int)index;
 @end
 
 @implementation WindowRaiser
 
-/* method returning the max between two numbers */
 - (int) trigger: (int)pid window:(int)window index:(int)index {
     // As far as I can tell, this will tell the operating system to switch to this app.
     // https://stackoverflow.com/questions/2333078/how-to-launch-application-and-bring-it-to-front-using-cocoa-api/2334362#2334362

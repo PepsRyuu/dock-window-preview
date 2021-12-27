@@ -40,8 +40,6 @@ So after a lot of research, I decided to give it a try myself and to give it awa
 
 * Filter out Finder windows that cause crashes.
 * Show preview for minimized windows.
-* Fix issue where when interacting with a second monitor, accessibility API fails to detect hover over dock.
-    * The dock from the accessibility API perspective seems to be above where the dock is visually.
 * Keyboard Controls.
 * Nicer permissions user experience.
 * MenuBar Icon for configuring.
@@ -49,3 +47,5 @@ So after a lot of research, I decided to give it a try myself and to give it awa
 * Improve performance of rendering of thumbnails and CPU usage for mouse tracking.
 * Custom theming with the config file.
 * Once there's a great user experience, investigate how to contribute to brew.
+* Support auto-hiding dock and dock in alternate locations.
+* Ensure preview does not appear outside of the monitor's area
