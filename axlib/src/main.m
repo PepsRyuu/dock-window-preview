@@ -1,4 +1,4 @@
-// https://nodejs.org/api/addons.html#node-api
+// https://nodejs.org/api/n-api.html
 
 #include <node_api.h>
 #import <AppKit/AppKit.h>
@@ -10,16 +10,34 @@ AXUIElementRef sys_wide;
 /**
  * Returns whether or not the Accessibility API is enabled.
  *
- * @method AXEnabled
- * @return {string}
+ * @method AXHasAccessibilityPermission
+ * @return {int}
  */
-napi_value AXEnabled (napi_env env, napi_callback_info args) {
+napi_value AXHasAccessibilityPermission (napi_env env, napi_callback_info args) {
     napi_value result;
 
     if (AXAPIEnabled()) {
-        napi_create_string_utf8(env, "Enabled", NAPI_AUTO_LENGTH, &result);
+        napi_create_int32(env, 1, &result);
     } else {
-        napi_create_string_utf8(env, "Not Enabled", NAPI_AUTO_LENGTH, &result);
+        napi_create_int32(env, 0, &result);
+    }
+
+    return result;
+}
+
+/**
+ * Returns whether or not the Screen Recording API is enabled.
+ *
+ * @method AXHasScreenRecordingPermission
+ * @return {int}
+ */
+napi_value AXHasScreenRecordingPermission (napi_env env, napi_callback_info args) {
+    napi_value result;
+
+    if (CGPreflightScreenCaptureAccess()) {
+        napi_create_int32(env, 1, &result);
+    } else {
+        napi_create_int32(env, 0, &result);
     }
 
     return result;
@@ -370,9 +388,13 @@ napi_value init (napi_env env, napi_value exports) {
     sys_wide = AXUIElementCreateSystemWide();
 
     // Export functions to the exports object.
-    napi_value fn_AXEnabled;
-    napi_create_function(env, NULL, 0, AXEnabled, NULL, &fn_AXEnabled);
-    napi_set_named_property(env, exports, "AXEnabled", fn_AXEnabled);
+    napi_value fn_AXHasAccessibilityPermission;
+    napi_create_function(env, NULL, 0, AXHasAccessibilityPermission, NULL, &fn_AXHasAccessibilityPermission);
+    napi_set_named_property(env, exports, "AXHasAccessibilityPermission", fn_AXHasAccessibilityPermission);
+
+    napi_value fn_AXHasScreenRecordingPermission;
+    napi_create_function(env, NULL, 0, AXHasScreenRecordingPermission, NULL, &fn_AXHasScreenRecordingPermission);
+    napi_set_named_property(env, exports, "AXHasScreenRecordingPermission", fn_AXHasScreenRecordingPermission);
 
     napi_value fn_AXGetElementAtPosition;
     napi_create_function(env, NULL, 0, AXGetElementAtPosition, NULL, &fn_AXGetElementAtPosition);

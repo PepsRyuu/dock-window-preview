@@ -1,5 +1,8 @@
 # Dock Window Preview
 
+[![License](https://badgen.net/github/license/pepsryuu/dock-window-preview)](./LICENSE)
+[![Twitter](https://img.shields.io/twitter/follow/PepsRyuu?style=social)](https://twitter.com/PepsRyuu)
+
 Adds window preview functionality on hover for Mac Dock, an open-source alternative.
 
 *This is very early in development and it will be buggy. Use at your own risk.*
@@ -16,12 +19,11 @@ So after a lot of research, I decided to give it a try myself and to give it awa
 ## Getting Started
 
 * Ensure you have NodeJS installed. 
-* If Node is not installed, use ```brew install nvm``` and install at least 14 using ```nvm install 14``` and ```nvm use 14```.
+* If Node is not installed, run ```brew install nvm``` then run ```nvm install 14``` and ```nvm use 14```.
 * Run ```npm install```, and then ```npm run build```.
 * App will be compiled to ```out``` directory.
 * Configure ```config.json``` with additional app aliases as required.
-* Run the app.
-* Open ```Security & Privacy``` and grant ```Files and Folders```, ```Accessibility``` and ```Screen Recording``` permissions.
+* Run the app, grant the requested permissions.
 
 ## For developers
 
@@ -29,23 +31,27 @@ So after a lot of research, I decided to give it a try myself and to give it awa
 * Use ```node index.js``` to run.
 * Use ```node index.js --debug``` for additional logging information.
 * For context, I mostly write front-end applications, so I prefer to work with JavaScript where possible.
-* My knowledge of Objective-C is incredibly basic. There's probably better ways of accomplishing certain things.
-* This approach I'm inclined to stick with, as it makes it significantly easier for other people to modify the app and contribute.
+* My knowledge of Objective-C is incredibly basic, so the code could be better.
+* This approach of mostly JavaScript will make it easier for others to contribute.
 
 ## Troubleshooting
 
 * If you rebuild the app, force quit the app using the Activity Monitor, and wipe out the permissions entirely, then run the app again.
+
+## Acknowledgements
+
+* Built on [Yue](https://github.com/yue/yue), bundled using [yackage](https://github.com/yue/yackage).
 
 ## Task List
 
 * Filter out Finder windows that cause crashes.
 * Show preview for minimized windows.
 * Keyboard Controls.
-* Nicer permissions user experience.
-* MenuBar Icon for configuring.
+* Make configuration file configurable from menu bar icon, and reload configuration.
 * Minimize and close windows from the previews.
 * Improve performance of rendering of thumbnails and CPU usage for mouse tracking.
 * Custom theming with the config file.
 * Once there's a great user experience, investigate how to contribute to brew.
 * Support auto-hiding dock and dock in alternate locations.
 * Ensure preview does not appear outside of the monitor's area
+* If clicking on a dock icon, hide the preview
