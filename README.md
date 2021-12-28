@@ -22,17 +22,21 @@ So after a lot of research, I decided to give it a try myself and to give it awa
 * If Node is not installed, run ```brew install nvm``` then run ```nvm install 14``` and ```nvm use 14```.
 * Run ```npm install```, and then ```npm run build```.
 * App will be compiled to ```out``` directory.
-* Configure ```config.json``` with additional app aliases as required.
 * Run the app, grant the requested permissions.
 
 ## For developers
 
 * For permissions, grant the same permissions to ```Terminal```.
-* Use ```node index.js``` to run.
-* Use ```node index.js --debug``` for additional logging information.
+* Use ```npm start``` to run, this will use ```yode``` instead of ```node```.
 * For context, I mostly write front-end applications, so I prefer to work with JavaScript where possible.
 * My knowledge of Objective-C is incredibly basic, so the code could be better.
 * This approach of mostly JavaScript will make it easier for others to contribute.
+
+## Configuration
+
+* Config file is located in ```$HOME/.dock-window-preview/config.json```.
+* ```aliases``` allows mapping apps on the dock to their actual name. If a thumbnail isn't showing, see what it's called in the dock, and use Activity Monitor to find it's real name.
+* ```theme``` provides customisation to the visual appearance of the preview using hexadecimal colours in the format ```#AARRGGBB```.
 
 ## Troubleshooting
 
@@ -44,13 +48,11 @@ So after a lot of research, I decided to give it a try myself and to give it awa
 
 ## Task List
 
-* Filter out Finder windows that cause crashes.
 * Show preview for minimized windows.
+* Improve performance of thumbnail generation. May need to implement window observation and caching.
+* Gather window data asynchronously, and don't show outdated previews if the mouse has moved off that dock icon.
 * Keyboard Controls.
-* Make configuration file configurable from menu bar icon, and reload configuration.
 * Minimize and close windows from the previews.
-* Improve performance of rendering of thumbnails and CPU usage for mouse tracking.
-* Custom theming with the config file.
 * Once there's a great user experience, investigate how to contribute to brew.
 * Support auto-hiding dock and dock in alternate locations.
 * Ensure preview does not appear outside of the monitor's area

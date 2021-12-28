@@ -205,7 +205,8 @@ napi_value AXGetWindowList (napi_env env, napi_callback_info info) {
     napi_value result;
     napi_create_array(env, &result);
 
-    // List of window attributes: https://stackoverflow.com/questions/44680724/how-to-get-array-of-unique-pids-from-cgwindowlistcopywindowinfo-in-swift
+    // List of window attributes
+    // https://stackoverflow.com/questions/44680724/how-to-get-array-of-unique-pids-from-cgwindowlistcopywindowinfo-in-swift
     for (int i = 0; i < windowListLength; i++) {
         // Get the dictionary of keys for the window.
         NSDictionary* dict = CFArrayGetValueAtIndex(windowList, i);
@@ -218,6 +219,11 @@ napi_value AXGetWindowList (napi_env env, napi_callback_info info) {
         napi_value result_entry_name;
         napi_create_string_utf8(env, [[dict objectForKey:@"kCGWindowOwnerName"] UTF8String], NAPI_AUTO_LENGTH, &result_entry_name);
         napi_set_named_property(env, result_entry, "name", result_entry_name);
+
+        // Get the layer of the Window.
+        napi_value result_entry_layer;
+        napi_create_int64(env, [[dict objectForKey:@"kCGWindowLayer"] intValue], &result_entry_layer);
+        napi_set_named_property(env, result_entry, "layer", result_entry_layer);
 
         // Get the PID of the Window
         napi_value result_entry_pid;
@@ -254,6 +260,7 @@ napi_value AXGetWindowPreview (napi_env env, napi_callback_info info) {
     napi_get_value_int64(env, args[0], &window);
 
     // Generate the image. This will trigger permission request.
+    // This function is incredibly slow at around 50ms per large window, a noticeable delay.
     CGImageRef img = CGWindowListCreateImage(CGRectNull, kCGWindowListOptionIncludingWindow, window, kCGWindowImageNominalResolution || kCGWindowImageBoundsIgnoreFraming);
 
     if (img) {

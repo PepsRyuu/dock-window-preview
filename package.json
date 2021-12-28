@@ -3,16 +3,17 @@
     "private": true,
     "version": "0.0.1",
     "scripts": {
-        "build": "yackage build out/ && cp config.json out/config.json"
+        "start": "yode index.js --debug",
+        "build": "yackage build out/"
     },
     "dependencies": {
         "axlib": "file:axlib",
-        "fetch-yode": "^1.0.3",
-        "gui": "^0.10.1",
-        "pngjs": "^6.0.0"
+        "chokidar": "3.5.2",
+        "fetch-yode": "1.0.3",
+        "gui": "0.10.1"
     },
     "devDependencies": {
-        "yackage": "^0.6.0"
+        "yackage": "0.6.0"
     },
     "build": {
         "appId": "com.pepsryuu.dock-window-preview",
