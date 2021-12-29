@@ -2,6 +2,19 @@ let gui = require('gui');
 let fs = require('fs'); 
 let path = require('path');
 
+// Asar patching is broken.
+// This patch works around the optional opts that's being passed to lstat
+// from chokidar. Asar is not aware of this optional parameter.
+// To debug issues like this, add "--unpack \"*.{json,node,js}\" to yackage.
+if (fs.lstat.toString().indexOf('isAsar') > -1) {
+    let lstat = fs.lstat;
+    fs.lstat = function (...args) {
+        let p = args[0];
+        let callback = args.length === 3? args[2]: args[1];
+        lstat(p, callback);
+    };
+}
+
 // Hides from the Dock
 gui.app.setActivationPolicy('accessory');
 
