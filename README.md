@@ -48,12 +48,13 @@ So after a lot of research, I decided to give it a try myself and to give it awa
 
 ## Task List
 
-* Show preview for minimized windows.
-* Improve performance of thumbnail generation. May need to implement window observation and caching.
-* Gather window data asynchronously, and don't show outdated previews if the mouse has moved off that dock icon.
-* Keyboard Controls.
+* Title of windows.
 * Minimize and close windows from the previews.
+* Keyboard Controls.
 * Once there's a great user experience, investigate how to contribute to brew.
 * Support auto-hiding dock and dock in alternate locations.
 * Ensure preview does not appear outside of the monitor's area
 * If clicking on a dock icon, hide the preview
+* Fix issue where apps cannot be raised if they are fullscreen.
+* Fix issue with apps like VSCode with empty windows that cannot be raised.
+* Gather window data asynchronously, and don't show outdated previews if the mouse has moved off that dock icon.

@@ -6,7 +6,7 @@
         "preview": {
             "border:color": "#ffffff",
             "background:color": "#cc000000",
-            "background:color:hover": "#cc333333"
+            "background:color:hover": "#cc777777"
         }
     }
 }

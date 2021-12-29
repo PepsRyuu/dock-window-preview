@@ -5,6 +5,16 @@
 #import <Foundation/Foundation.h>
 #import <Cocoa/Cocoa.h>
 
+// Exposing Private API
+// https://opensource.apple.com/source/WebCore/WebCore-7606.4.5/PAL/pal/spi/cg/CoreGraphicsSPI.h.auto.html
+uint32_t CGSMainConnectionID(void);
+CFArrayRef CGSHWCaptureWindowList(uint32_t, CGWindowID* windowList, uint32_t, CGSWindowCaptureOptions);
+typedef enum { kCGSWindowCaptureNominalResolution = 0x0200,  kCGSCaptureIgnoreGlobalClipShape = 0x0800 } CGSWindowCaptureOptions;
+
+// Expose private api for getting the window ID from an accessibility element.
+AXError _AXUIElementGetWindow(AXUIElementRef, CGWindowID* out);
+
+// Global accessibility object.
 AXUIElementRef sys_wide;
 
 /**
@@ -193,12 +203,9 @@ napi_value AXGetElementAtPosition (napi_env env, napi_callback_info info) {
  * @return {Array<Object>}
  */
 napi_value AXGetWindowList (napi_env env, napi_callback_info info) {
-    // TODO: Get Minimized Windows
-    // Possible approach: kCGWindowListOptionAll|kCGWindowListExcludeDesktopElements
-    // https://developer.apple.com/documentation/coregraphics/quartz_window_services/window_list_option_constants?language=objc
-
     // Get a list of all windows.
-    CFArrayRef windowList = CGWindowListCopyWindowInfo(kCGWindowListOptionOnScreenOnly, kCGNullWindowID);
+    // https://developer.apple.com/documentation/coregraphics/quartz_window_services/window_list_option_constants?language=objc
+    CFArrayRef windowList = CGWindowListCopyWindowInfo(kCGWindowListOptionAll | kCGWindowListExcludeDesktopElements, kCGNullWindowID);
     CFIndex windowListLength = CFArrayGetCount(windowList);
 
     // Create the array to store our window objects
@@ -211,35 +218,58 @@ napi_value AXGetWindowList (napi_env env, napi_callback_info info) {
         // Get the dictionary of keys for the window.
         NSDictionary* dict = CFArrayGetValueAtIndex(windowList, i);
 
-        // Prepare the object response
-        napi_value result_entry;
-        napi_create_object(env, &result_entry);
+        // Determining if we should show this window.
+        NSString* name = [dict objectForKey:@"kCGWindowName"];
+        int layer = [[dict objectForKey:@"kCGWindowLayer"] intValue];
+        int onscreen = [[dict objectForKey:@"kCGWindowIsOnscreen"] intValue];
+
+        // The list we fetched is huge, and contains every possible window, both real and fake.
+        // To determine real windows, we're checking if they either have a proper name, or are on the screen.
+        // Also they must be layer 0. Stuff like Finder has stuff on negative layers, and menubar is a higher layer.
+        // Some windows may have name defined, but with no title, don't show them (eg. Fullscreen apps create a blank title window)
+        // TODO: Need to figure out why some apps like VSCode still show fake windows.
+        if ((name || onscreen) && layer == 0 && (name? name.length > 0 : true)) {
+            // Prepare the object response
+            napi_value result_entry;
+            napi_create_object(env, &result_entry);
+
+            if (name) {
+                napi_value result_entry_name;
+                napi_create_string_utf8(env, [name UTF8String], NAPI_AUTO_LENGTH, &result_entry_name);
+                napi_set_named_property(env, result_entry, "name", result_entry_name);
+            }  
+
+            // Get the name of the Window.
+            napi_value result_entry_owner;
+            napi_create_string_utf8(env, [[dict objectForKey:@"kCGWindowOwnerName"] UTF8String], NAPI_AUTO_LENGTH, &result_entry_owner);
+            napi_set_named_property(env, result_entry, "owner", result_entry_owner);
+
+            // Get Onscreen status
+            napi_value result_entry_onscreen;
+            napi_create_int32(env, [[dict objectForKey:@"kCGWindowIsOnscreen"] intValue], &result_entry_onscreen);
+            napi_set_named_property(env, result_entry, "onscreen", result_entry_onscreen);
         
-        // Get the name of the Window.
-        napi_value result_entry_name;
-        napi_create_string_utf8(env, [[dict objectForKey:@"kCGWindowOwnerName"] UTF8String], NAPI_AUTO_LENGTH, &result_entry_name);
-        napi_set_named_property(env, result_entry, "name", result_entry_name);
+            // Get the layer of the Window.
+            napi_value result_entry_layer;
+            napi_create_int64(env, [[dict objectForKey:@"kCGWindowLayer"] intValue], &result_entry_layer);
+            napi_set_named_property(env, result_entry, "layer", result_entry_layer);
 
-        // Get the layer of the Window.
-        napi_value result_entry_layer;
-        napi_create_int64(env, [[dict objectForKey:@"kCGWindowLayer"] intValue], &result_entry_layer);
-        napi_set_named_property(env, result_entry, "layer", result_entry_layer);
+            // Get the PID of the Window
+            napi_value result_entry_pid;
+            napi_create_int32(env, [[dict objectForKey:@"kCGWindowOwnerPID"] intValue], &result_entry_pid);
+            napi_set_named_property(env, result_entry, "pid", result_entry_pid);
 
-        // Get the PID of the Window
-        napi_value result_entry_pid;
-        napi_create_int32(env, [[dict objectForKey:@"kCGWindowOwnerPID"] intValue], &result_entry_pid);
-        napi_set_named_property(env, result_entry, "pid", result_entry_pid);
+            // Get the Window ID
+            napi_value result_entry_window;
+            napi_create_int32(env, [[dict objectForKey:@"kCGWindowNumber"] intValue], &result_entry_window);
+            napi_set_named_property(env, result_entry, "window", result_entry_window);
 
-        // Get the Window ID
-        napi_value result_entry_window;
-        napi_create_int32(env, [[dict objectForKey:@"kCGWindowNumber"] intValue], &result_entry_window);
-        napi_set_named_property(env, result_entry, "window", result_entry_window);
-
-        // Push to the array
-        napi_set_element(env, result, i, result_entry);
+            // Push to the array
+            napi_set_element(env, result, i, result_entry);
+        }
     }
 
-  return result;
+    return result;
 }
 
 /**
@@ -260,8 +290,24 @@ napi_value AXGetWindowPreview (napi_env env, napi_callback_info info) {
     napi_get_value_int64(env, args[0], &window);
 
     // Generate the image. This will trigger permission request.
-    // This function is incredibly slow at around 50ms per large window, a noticeable delay.
-    CGImageRef img = CGWindowListCreateImage(CGRectNull, kCGWindowListOptionIncludingWindow, window, kCGWindowImageNominalResolution || kCGWindowImageBoundsIgnoreFraming);
+    CGImageRef img = NULL;
+
+    // This is a private API method. It seems to be a LOT faster than the public method. 
+    // The other reason to use this is because it also can take images of minimized windows.
+    // Despite the name, it only allows to return one image, but that's fine for our purposes.  
+    //
+    // <PRIVATE API>
+    CFArrayRef img_arr = CGSHWCaptureWindowList(CGSMainConnectionID(), &window, 1, kCGSCaptureIgnoreGlobalClipShape | kCGSWindowCaptureNominalResolution);
+
+    // If we have an image, take it from the "list". Again, it only returns a single image anyways.
+    if (img_arr) {
+        img = (CGImageRef)CFArrayGetValueAtIndex(img_arr, 0);
+    }
+
+    // If for some reason the above did not work, fallback to the slower function instead.
+    if (!img) {
+        img = CGWindowListCreateImage(CGRectNull, kCGWindowListOptionIncludingWindow, window, kCGWindowImageNominalResolution | kCGWindowImageBoundsIgnoreFraming);
+    }
 
     if (img) {
         // Scale down the image
@@ -334,6 +380,8 @@ napi_value AXGetWindowPreview (napi_env env, napi_callback_info info) {
 
     if (element) {
         CFArrayRef array;
+        // This includes all windows, but in order of front -> back.
+        // This is inconsistent with the window list option kCGWindowListOptionAll.
         AXUIElementCopyAttributeValues(element, kAXWindowsAttribute, 0, 99999, &array);
 
         if (array == NULL) {
@@ -341,8 +389,22 @@ napi_value AXGetWindowPreview (napi_env env, napi_callback_info info) {
         }
 
         NSArray *windows = (NSArray *)CFBridgingRelease(array);
-        AXUIElementRef ref = (__bridge AXUIElementRef)windows[index];
-        AXError error = AXUIElementPerformAction(ref, kAXRaiseAction);
+        CFIndex windowListLength = CFArrayGetCount(windows);
+
+        // Since the window list order from accessibility api is not the same as the window
+        // list order from the kCGWindowListOptionAll, we have to find the correct window ourselves.
+        // Unfortunately there's no way of doing this cleanly. So we're using the private API method
+        // to get the id of the window and seeing if that's the one we clicked.
+        // Other approaches could be to check the position, size, and title of the windows.
+        for (int i = 0; i < windowListLength; i++) {
+            CGWindowID winId;
+
+            // <PRIVATE API>
+            _AXUIElementGetWindow(windows[i], &winId);
+            if (winId == window) {
+                AXError error = AXUIElementPerformAction(windows[i], kAXRaiseAction);
+            }
+        }
     }
 
     return 0; 
