@@ -231,7 +231,7 @@ napi_value AXGetWindowList (napi_env env, napi_callback_info info) {
         if ((name || onscreen) && layer == 0 && (name? name.length > 0 : true)) {
             // Prepare the object response
             napi_value result_entry;
-            napi_create_object(env, &result_entry);
+            napi_create_object(env, &result_entry);            
 
             if (name) {
                 napi_value result_entry_name;
@@ -447,6 +447,59 @@ napi_value AXRaiseAppWindow (napi_env env, napi_callback_info info) {
 }
 
 /**
+ * Checks to see if the provided window is a real window.
+ *
+ * @method AXCheckIfStandardWindow
+ * @param {int} pid
+ * @param {int} window
+ * @return {int}
+ */
+napi_value AXCheckIfStandardWindow (napi_env env, napi_callback_info info) {
+     // Extract function arguments
+    size_t argc = 2;
+    napi_value args[2];
+    napi_get_cb_info(env, info, &argc, &args, NULL, NULL);
+
+    // Extract the parameters
+    int pid;
+    int window;
+    napi_get_value_int64(env, args[0], &pid);
+    napi_get_value_int64(env, args[1], &window);
+
+    AXUIElementRef element = AXUIElementCreateApplication(pid);
+
+    // This window list contains all of the visible onscreen and minimised windows.
+    // Compare against this array and if the window is inside this array
+    // then we should show it. This might seem somewhat redundant, but we can't
+    // access this without the PID of the process, which we can only get from
+    // the previous AXGetWindowList call. 
+    CFArrayRef array;
+    AXUIElementCopyAttributeValues(element, kAXWindowsAttribute, 0, 99999, &array);
+
+    if (array == NULL) {
+        return 0;
+    }
+
+    NSArray *windows = (NSArray *)CFBridgingRelease(array);
+    CFIndex windowListLength = CFArrayGetCount(windows);
+
+    for (int i = 0; i < windowListLength; i++) {
+        CGWindowID winId;
+
+        // <PRIVATE API>
+        _AXUIElementGetWindow(windows[i], &winId);
+
+        if (winId == window) {
+            napi_value result;
+            napi_create_int32(env, 1, &result);
+            return result;
+        }
+    }
+
+    return NULL;
+}
+
+/**
  * Exports all of the functions for this module.
  *
  * @method init
@@ -484,6 +537,10 @@ napi_value init (napi_env env, napi_value exports) {
     napi_value fn_AXRaiseAppWindow;
     napi_create_function(env, NULL, 0, AXRaiseAppWindow, NULL, &fn_AXRaiseAppWindow);
     napi_set_named_property(env, exports, "AXRaiseAppWindow", fn_AXRaiseAppWindow);
+
+    napi_value fn_AXCheckIfStandardWindow;
+    napi_create_function(env, NULL, 0, AXCheckIfStandardWindow, NULL, &fn_AXCheckIfStandardWindow);
+    napi_set_named_property(env, exports, "AXCheckIfStandardWindow", fn_AXCheckIfStandardWindow);
 
     return exports;
 }

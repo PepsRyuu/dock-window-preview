@@ -46,15 +46,19 @@ So after a lot of research, I decided to give it a try myself and to give it awa
 
 * Built on [Yue](https://github.com/yue/yue), bundled using [yackage](https://github.com/yue/yackage).
 
+## Known Limitations
+
+* Only shows windows in the current space / desktop. 
+* Compatibility will vary from app to app.
+
 ## Task List
 
-* Title of windows.
+* Figure out how to show windows from other spaces and how to focus on them.
 * Minimize and close windows from the previews.
 * Keyboard Controls.
 * Once there's a great user experience, investigate how to contribute to brew.
 * Support auto-hiding dock and dock in alternate locations.
 * Ensure preview does not appear outside of the monitor's area
 * If clicking on a dock icon, hide the preview
-* Fix issue where apps cannot be raised if they are fullscreen.
-* Fix issue with apps like VSCode with empty windows that cannot be raised.
+* Test further different apps for unusual windows like invisible windows.
 * Gather window data asynchronously, and don't show outdated previews if the mouse has moved off that dock icon.
