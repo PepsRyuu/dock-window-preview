@@ -187,7 +187,13 @@ napi_value AXGetElementAtPosition (napi_env env, napi_callback_info info) {
                 napi_create_int32(env, rect.size.height, &result_size_height);
                 napi_set_named_property(env, result_size, "height", result_size_height);
                 napi_set_named_property(env, result, "size", result_size);
+
+                CFRelease(value);
+                CFRelease(axTitle);
+                CFRelease(axIsApplicationRunning);
             }
+
+            CFRelease(axSubrole);
 
             return result;
         }
@@ -267,7 +273,10 @@ napi_value AXGetWindowList (napi_env env, napi_callback_info info) {
             // Push to the array
             napi_set_element(env, result, i, result_entry);
         }
+
     }
+
+    CFRelease(windowList);
 
     return result;
 }
@@ -347,9 +356,23 @@ napi_value AXGetWindowPreview (napi_env env, napi_callback_info info) {
         napi_set_named_property(env, result, "data", result_data);
 
         // Clean up pointers
+        CGContextRelease(context);
+        CGImageRelease(scaled_img);
         CFRelease(raw_data_ref);
 
+        if (img_arr) {
+            CFRelease(img_arr);
+        } else {
+            CFRelease(img);
+        }
+
         return result;
+    }
+
+    if (img_arr) {
+        CFRelease(img_arr);
+    } else {
+        CFRelease(img);
     }
     
     return NULL;
