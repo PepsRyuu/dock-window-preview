@@ -522,6 +522,125 @@ napi_value AXCheckIfStandardWindow (napi_env env, napi_callback_info info) {
     return NULL;
 }
 
+// Track the callbacks used for the mouse observers
+// Example: https://giters.com/electron/electron/issues/30122
+// Example: https://github.com/nodejs/node/blob/master/test/node-api/test_threadsafe_function/binding.c
+// https://nodejs.org/api/n-api.html#napi_create_threadsafe_function
+napi_threadsafe_function ts_func_global_mouse_move;
+napi_threadsafe_function ts_func_global_mouse_down;
+napi_threadsafe_function ts_func_local_mouse_down;
+bool in_progress_move_callback = false;
+
+/**
+ * Triggers the given callback.
+ *
+ * @method TriggerJSCallback
+ */
+void TriggerJSCallback(napi_env env, napi_value callback, void* context, void* data) {
+    napi_handle_scope scope;
+    napi_open_handle_scope(env, &scope);
+    napi_value this;
+    napi_get_undefined(env, &this);
+    napi_value result;
+    napi_call_function(env, this, callback, 0, NULL, &result);
+    napi_close_handle_scope(env, scope);
+}
+
+/**
+ * Listens for mouse move event unrelated to this application.
+ *
+ * @method AXObserveGlobalMouseMove
+ * @param {Function} callback
+ */
+napi_value AXObserveGlobalMouseMove (napi_env env, napi_callback_info info) {
+    size_t argc = 1;
+    napi_value args[1];
+    napi_get_cb_info(env, info, &argc, &args, NULL, NULL);
+ 
+    napi_value name;
+    napi_create_string_utf8(env, "AXObserveGlobalMouseMove", NAPI_AUTO_LENGTH, &name);
+
+    napi_create_threadsafe_function(
+        env, args[0], NULL, name, 50, 1,
+        NULL, NULL, NULL,
+        TriggerJSCallback, &ts_func_global_mouse_move
+    );
+
+    [NSEvent addGlobalMonitorForEventsMatchingMask:(NSMouseMovedMask) handler:^(NSEvent *event) {
+        if (!in_progress_move_callback) {
+            in_progress_move_callback = true;
+            // Caps the CPU usage while the mouse is moving to roughly 3%
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 0.1 * NSEC_PER_SEC), dispatch_get_main_queue(), ^ {
+                in_progress_move_callback = false;
+                napi_acquire_threadsafe_function(ts_func_global_mouse_move);
+                napi_call_threadsafe_function(ts_func_global_mouse_move, NULL, napi_tsfn_blocking);
+            });
+        }
+    }];
+
+    return NULL;
+}
+
+/**
+ * Listens for mouse down events that are unrelated to this application.
+ *
+ * @method AXObserveGlobalMouseDown
+ * @param {Function} callback
+ */
+napi_value AXObserveGlobalMouseDown (napi_env env, napi_callback_info info) {
+    size_t argc = 1;
+    napi_value args[1];
+    napi_get_cb_info(env, info, &argc, &args, NULL, NULL);
+ 
+    napi_value name;
+    napi_create_string_utf8(env, "AXObserveGlobalMouseDown", NAPI_AUTO_LENGTH, &name);
+
+    napi_create_threadsafe_function(
+        env, args[0], NULL, name, 50, 1,
+        NULL, NULL, NULL,
+        TriggerJSCallback, &ts_func_global_mouse_down
+    );
+
+    // https://developer.apple.com/documentation/appkit/nsevent/1535472-addglobalmonitorforeventsmatchin
+    [NSEvent addGlobalMonitorForEventsMatchingMask:(NSLeftMouseDownMask) handler:^(NSEvent *event) {
+        napi_acquire_threadsafe_function(ts_func_global_mouse_down);
+        napi_call_threadsafe_function(ts_func_global_mouse_down, NULL, napi_tsfn_blocking);
+    }];
+
+    return NULL;
+}
+
+/**
+ * Listens for mouse down events that are for this application.
+ *
+ * @method AXObserveLocalMouse
+ * @param {Function} callback
+ */
+napi_value AXObserveLocalMouseDown (napi_env env, napi_callback_info info) {
+    size_t argc = 1;
+    napi_value args[1];
+    napi_get_cb_info(env, info, &argc, &args, NULL, NULL);
+ 
+    napi_value name;
+    napi_create_string_utf8(env, "AXObserveLocalMouseDown", NAPI_AUTO_LENGTH, &name);
+
+    napi_create_threadsafe_function(
+        env, args[0], NULL, name, 50, 1,
+        NULL, NULL, NULL,
+        TriggerJSCallback, &ts_func_local_mouse_down
+    );
+
+    // https://developer.apple.com/documentation/appkit/nsevent/1534971-addlocalmonitorforeventsmatching
+    [NSEvent addLocalMonitorForEventsMatchingMask:(NSEventMaskLeftMouseDown) handler:^NSEvent *(NSEvent *event) {
+        napi_acquire_threadsafe_function(ts_func_local_mouse_down);
+        napi_call_threadsafe_function(ts_func_local_mouse_down, NULL, napi_tsfn_blocking);
+        return event;
+    }];
+
+    return NULL;
+}
+
+
 /**
  * Exports all of the functions for this module.
  *
@@ -564,6 +683,18 @@ napi_value init (napi_env env, napi_value exports) {
     napi_value fn_AXCheckIfStandardWindow;
     napi_create_function(env, NULL, 0, AXCheckIfStandardWindow, NULL, &fn_AXCheckIfStandardWindow);
     napi_set_named_property(env, exports, "AXCheckIfStandardWindow", fn_AXCheckIfStandardWindow);
+
+    napi_value fn_AXObserveGlobalMouseMove;
+    napi_create_function(env, NULL, 0, AXObserveGlobalMouseMove, NULL, &fn_AXObserveGlobalMouseMove);
+    napi_set_named_property(env, exports, "AXObserveGlobalMouseMove", fn_AXObserveGlobalMouseMove);
+
+    napi_value fn_AXObserveGlobalMouseDown;
+    napi_create_function(env, NULL, 0, AXObserveGlobalMouseDown, NULL, &fn_AXObserveGlobalMouseDown);
+    napi_set_named_property(env, exports, "AXObserveGlobalMouseDown", fn_AXObserveGlobalMouseDown);
+
+    napi_value fn_AXObserveLocalMouseDown;
+    napi_create_function(env, NULL, 0, AXObserveLocalMouseDown, NULL, &fn_AXObserveLocalMouseDown);
+    napi_set_named_property(env, exports, "AXObserveLocalMouseDown", fn_AXObserveLocalMouseDown);
 
     return exports;
 }

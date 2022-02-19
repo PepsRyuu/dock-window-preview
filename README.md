@@ -16,10 +16,18 @@ Thankfully, most of my needs as a Windows user are satisfied thanks to AltTab, R
 The only options seemed to be old paid closed source applications (eg. HyperDock), with no guarantee they were going to work properly at all and didn't seem well supported.
 So after a lot of research, I decided to give it a try myself and to give it away for free.
 
+## Getting Started (Quick) 
+
+* Run this command in the terminal: ```/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/PepsRyuu/dock-window-preview/master/install.sh)"```
+* Run the application, grant the permissions.
+* Hover over the dock to see window previews.
+
 ## Getting Started
 
 * Ensure you have NodeJS installed. 
-* If Node is not installed, run ```brew install nvm``` then run ```nvm install 14``` and ```nvm use 14```.
+* If Node is not installed, run ```brew install nvm``` then run ```nvm install 16``` and ```nvm use 16```.
+* Clone the repository using ```git clone https://github.com/PepsRyuu/dock-window-preview.git```
+* Change into the directory using ```cd dock-window-preview```
 * Run ```npm install```, and then ```npm run build```.
 * App will be compiled to ```out``` directory.
 * Run the app, grant the requested permissions.
