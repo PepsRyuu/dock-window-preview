@@ -55,6 +55,10 @@ fi
 $NODE $NPM install
 $NODE $NPM run build
 
+# Insert Git commit id into text file
+COMMIT_ID=$(git rev-parse --short HEAD)
+echo $COMMIT_ID > out/Dock\ Window\ Preview.app/Contents/Resources/commit_id
+
 # Reset accessibility permissions if they already exist.
 tccutil reset Accessibility com.pepsryuu.dock-window-preview
 tccutil reset ScreenCapture com.pepsryuu.dock-window-preview

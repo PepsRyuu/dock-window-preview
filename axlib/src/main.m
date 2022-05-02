@@ -227,14 +227,11 @@ napi_value AXGetWindowList (napi_env env, napi_callback_info info) {
         // Determining if we should show this window.
         NSString* name = [dict objectForKey:@"kCGWindowName"];
         int layer = [[dict objectForKey:@"kCGWindowLayer"] intValue];
-        int onscreen = [[dict objectForKey:@"kCGWindowIsOnscreen"] intValue];
 
         // The list we fetched is huge, and contains every possible window, both real and fake.
-        // To determine real windows, we're checking if they either have a proper name, or are on the screen.
-        // Also they must be layer 0. Stuff like Finder has stuff on negative layers, and menubar is a higher layer.
-        // Some windows may have name defined, but with no title, don't show them (eg. Fullscreen apps create a blank title window)
-        // TODO: Need to figure out why some apps like VSCode still show fake windows.
-        if ((name || onscreen) && layer == 0 && (name? name.length > 0 : true)) {
+        // To determine real windows, they must be layer 0. Stuff like Finder has stuff on negative layers, and menubar is a higher layer.
+        // Later on the AX API is used to determine if the window is visible to accessibility API.
+        if (layer == 0) {
             // Prepare the object response
             napi_value result_entry;
             napi_create_object(env, &result_entry);            
@@ -268,11 +265,11 @@ napi_value AXGetWindowList (napi_env env, napi_callback_info info) {
             // Get the Window ID
             napi_value result_entry_window;
             napi_create_int32(env, [[dict objectForKey:@"kCGWindowNumber"] intValue], &result_entry_window);
-            napi_set_named_property(env, result_entry, "window", result_entry_window);
+            napi_set_named_property(env, result_entry, "wid", result_entry_window);
 
             // Push to the array
             napi_set_element(env, result, i, result_entry);
-        }
+        } 
 
     }
 
@@ -295,8 +292,8 @@ napi_value AXGetWindowPreview (napi_env env, napi_callback_info info) {
     napi_get_cb_info(env, info, &argc, &args, NULL, NULL);
 
     // Extract the window ID parameter    
-    int window;
-    napi_get_value_int64(env, args[0], &window);
+    int wid;
+    napi_get_value_int64(env, args[0], &wid);
 
     // Generate the image. This will trigger permission request.
     CGImageRef img = NULL;
@@ -306,7 +303,7 @@ napi_value AXGetWindowPreview (napi_env env, napi_callback_info info) {
     // Despite the name, it only allows to return one image, but that's fine for our purposes.  
     //
     // <PRIVATE API>
-    CFArrayRef img_arr = CGSHWCaptureWindowList(CGSMainConnectionID(), &window, 1, kCGSCaptureIgnoreGlobalClipShape | kCGSWindowCaptureNominalResolution);
+    CFArrayRef img_arr = CGSHWCaptureWindowList(CGSMainConnectionID(), &wid, 1, kCGSCaptureIgnoreGlobalClipShape | kCGSWindowCaptureNominalResolution);
 
     // If we have an image, take it from the "list". Again, it only returns a single image anyways.
     if (img_arr) {
@@ -315,7 +312,7 @@ napi_value AXGetWindowPreview (napi_env env, napi_callback_info info) {
 
     // If for some reason the above did not work, fallback to the slower function instead.
     if (!img) {
-        img = CGWindowListCreateImage(CGRectNull, kCGWindowListOptionIncludingWindow, window, kCGWindowImageNominalResolution | kCGWindowImageBoundsIgnoreFraming);
+        img = CGWindowListCreateImage(CGRectNull, kCGWindowListOptionIncludingWindow, wid, kCGWindowImageNominalResolution | kCGWindowImageBoundsIgnoreFraming);
     }
 
     if (img) {
@@ -385,12 +382,12 @@ napi_value AXGetWindowPreview (napi_env env, napi_callback_info info) {
  * @class WindowRaiser
  */
 @interface WindowRaiser:NSObject
-- (int) trigger: (int)pid window:(int)window index:(int)index;
+- (int) trigger: (int)pid wid:(int)wid index:(int)index;
 @end
 
 @implementation WindowRaiser
 
-- (int) trigger: (int)pid window:(int)window index:(int)index {
+- (int) trigger: (int)pid wid:(int)wid index:(int)index {
     // As far as I can tell, this will tell the operating system to switch to this app.
     // https://stackoverflow.com/questions/2333078/how-to-launch-application-and-bring-it-to-front-using-cocoa-api/2334362#2334362
     NSRunningApplication* app = [NSRunningApplication runningApplicationWithProcessIdentifier: pid];
@@ -420,11 +417,11 @@ napi_value AXGetWindowPreview (napi_env env, napi_callback_info info) {
         // to get the id of the window and seeing if that's the one we clicked.
         // Other approaches could be to check the position, size, and title of the windows.
         for (int i = 0; i < windowListLength; i++) {
-            CGWindowID winId;
+            CGWindowID current_wid;
 
             // <PRIVATE API>
-            _AXUIElementGetWindow(windows[i], &winId);
-            if (winId == window) {
+            _AXUIElementGetWindow(windows[i], &current_wid);
+            if (current_wid == wid) {
                 AXError error = AXUIElementPerformAction(windows[i], kAXRaiseAction);
             }
         }
@@ -451,10 +448,10 @@ napi_value AXRaiseAppWindow (napi_env env, napi_callback_info info) {
 
     // Extract the parameters
     int pid;
-    int window;
+    int wid;
     int index;
     napi_get_value_int64(env, args[0], &pid);
-    napi_get_value_int64(env, args[1], &window);
+    napi_get_value_int64(env, args[1], &wid);
     napi_get_value_int64(env, args[2], &index);
 
     // This might look bizarre. Why create a separate class?
@@ -464,7 +461,7 @@ napi_value AXRaiseAppWindow (napi_env env, napi_callback_info info) {
     // it will refuse to use it, and instead reset to an empty value of 0.
     // Somehow this works around the issue. If anyone can explain this to me, it would be much appreciated.
     WindowRaiser* raiser = [[WindowRaiser alloc]init];
-    [raiser trigger:pid window:window index:index];
+    [raiser trigger:pid wid:wid index:index];
 
     return NULL;
 }
@@ -485,9 +482,9 @@ napi_value AXCheckIfStandardWindow (napi_env env, napi_callback_info info) {
 
     // Extract the parameters
     int pid;
-    int window;
+    int wid;
     napi_get_value_int64(env, args[0], &pid);
-    napi_get_value_int64(env, args[1], &window);
+    napi_get_value_int64(env, args[1], &wid);
 
     AXUIElementRef element = AXUIElementCreateApplication(pid);
 
@@ -507,12 +504,12 @@ napi_value AXCheckIfStandardWindow (napi_env env, napi_callback_info info) {
     CFIndex windowListLength = CFArrayGetCount(windows);
 
     for (int i = 0; i < windowListLength; i++) {
-        CGWindowID winId;
+        CGWindowID current_wid;
 
         // <PRIVATE API>
-        _AXUIElementGetWindow(windows[i], &winId);
+        _AXUIElementGetWindow(windows[i], &current_wid);
 
-        if (winId == window) {
+        if (current_wid == wid) {
             napi_value result;
             napi_create_int32(env, 1, &result);
             return result;
