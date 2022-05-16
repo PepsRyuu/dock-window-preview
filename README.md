@@ -5,7 +5,7 @@
 
 Adds window preview functionality on hover for Mac Dock, an open-source alternative.
 
-*This is very early in development and it will be buggy. Use at your own risk.*
+*Note: This is very early in development and may not work yet for your particular preferences (see below for known limitations and pending tasks). That said, give it a try and provide feedback if you can. Contributions are also welcome!*
 
 ![Image](./docs/image.png)
 
