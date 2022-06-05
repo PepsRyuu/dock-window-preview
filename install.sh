@@ -52,8 +52,8 @@ else
 fi
 
 # Install dependencies and run the build
-$NODE $NPM install
-$NODE $NPM run build
+PATH=$(readlink -f $(dirname $NODE)):$PATH $NODE $NPM install
+PATH=$(readlink -f $(dirname $NODE)):$PATH $NODE $NPM run build
 
 # Insert Git commit id into text file
 COMMIT_ID=$(git rev-parse --short HEAD)
