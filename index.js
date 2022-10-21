@@ -27,6 +27,8 @@ require('./lib/config').init();
 // Test for permissions and don't run the app unless
 // the permissions are in place.
 require('./lib/permissions').check(() => {
+    // TODO: Laggy menu item due to not being activated
+    gui.app.setActivationPolicy('prohibited'); // prevents activation of preview window
     require('./lib/preview').init();
     require('./lib/tray').init();
 });

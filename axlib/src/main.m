@@ -379,20 +379,16 @@ napi_value AXGetWindowPreview (napi_env env, napi_callback_info info) {
  * Objective-C class to avoid shared variables
  * between C functions and Objective-C.
  *
- * @class WindowRaiser
+ * @class WindowActionPerformer
  */
-@interface WindowRaiser:NSObject
-- (int) trigger: (int)pid wid:(int)wid index:(int)index;
+@interface WindowActionPerformer:NSObject
+- (int) trigger: (int)pid wid:(int)wid action:(int)action;
 @end
 
-@implementation WindowRaiser
+@implementation WindowActionPerformer
 
-- (int) trigger: (int)pid wid:(int)wid index:(int)index {
-    // As far as I can tell, this will tell the operating system to switch to this app.
-    // https://stackoverflow.com/questions/2333078/how-to-launch-application-and-bring-it-to-front-using-cocoa-api/2334362#2334362
-    NSRunningApplication* app = [NSRunningApplication runningApplicationWithProcessIdentifier: pid];
-    [app activateWithOptions: NSApplicationActivateIgnoringOtherApps];
-
+- (int) trigger: (int)pid wid:(int)wid action:(int)action {
+    
     // After switching the app, we need to bring the correct window into focus.
     // Due to a limitation with the accessibility API, we have to use the window index.
     // https://stackoverflow.com/questions/47066205/macos-activate-a-window-given-its-window-id
@@ -422,7 +418,29 @@ napi_value AXGetWindowPreview (napi_env env, napi_callback_info info) {
             // <PRIVATE API>
             _AXUIElementGetWindow(windows[i], &current_wid);
             if (current_wid == wid) {
-                AXError error = AXUIElementPerformAction(windows[i], kAXRaiseAction);
+                if (action == 1) {
+                    // As far as I can tell, this will tell the operating system to switch to this app.
+                    // https://stackoverflow.com/questions/2333078/how-to-launch-application-and-bring-it-to-front-using-cocoa-api/2334362#2334362
+                    NSRunningApplication* app = [NSRunningApplication runningApplicationWithProcessIdentifier: pid];
+                    [app activateWithOptions: NSApplicationActivateIgnoringOtherApps];
+                }
+
+                // Perform the actual raising of the app. 
+                // For closing minimised apps, we need to raise it before we can press the quit button.
+                if (action == 1 || action == 2) {
+                    AXError error = AXUIElementPerformAction(windows[i], kAXRaiseAction);
+                }
+
+                if (action == 2) {
+                    CFTypeRef closeBtn = NULL;
+                    AXUIElementCopyAttributeValue(windows[i], kAXCloseButtonAttribute, &closeBtn);
+                    if (!closeBtn) {
+                        return 0;
+                    }
+
+                    AXUIElementPerformAction(closeBtn, kAXPressAction);
+                    CFRelease(closeBtn);
+                }
             }
         }
     }
@@ -433,14 +451,14 @@ napi_value AXGetWindowPreview (napi_env env, napi_callback_info info) {
 @end
 
 /**
- * Tries to raise the selected window.
+ * Perform action on window (raise/close)
  *
- * @method AXRaiseAppWindow
+ * @method AXPerformActionOnWindow
  * @param {int} pid
  * @param {int} window
- * @param {int} window_index
+ * @param {int} action
  */
-napi_value AXRaiseAppWindow (napi_env env, napi_callback_info info) {
+napi_value AXPerformActionOnWindow (napi_env env, napi_callback_info info) {
     // Extract function arguments
     size_t argc = 3;
     napi_value args[3];
@@ -449,10 +467,10 @@ napi_value AXRaiseAppWindow (napi_env env, napi_callback_info info) {
     // Extract the parameters
     int pid;
     int wid;
-    int index;
+    int action;
     napi_get_value_int64(env, args[0], &pid);
     napi_get_value_int64(env, args[1], &wid);
-    napi_get_value_int64(env, args[2], &index);
+    napi_get_value_int64(env, args[2], &action);
 
     // This might look bizarre. Why create a separate class?
     // I think there's an C/ObjC interop issue? If I inline all of the code from this class into this function, the pid value will reset to 0.
@@ -460,8 +478,8 @@ napi_value AXRaiseAppWindow (napi_env env, napi_callback_info info) {
     // I suspect because there's an int that's manipulated on a low-level by a C function, even if ObjC is called much later
     // it will refuse to use it, and instead reset to an empty value of 0.
     // Somehow this works around the issue. If anyone can explain this to me, it would be much appreciated.
-    WindowRaiser* raiser = [[WindowRaiser alloc]init];
-    [raiser trigger:pid wid:wid index:index];
+    WindowActionPerformer* raiser = [[WindowActionPerformer alloc]init];
+    [raiser trigger:pid wid:wid action:action];
 
     return NULL;
 }
@@ -634,9 +652,9 @@ napi_value AXObserveLocalMouseDown (napi_env env, napi_callback_info info) {
         return event;
     }];
 
+
     return NULL;
 }
-
 
 /**
  * Exports all of the functions for this module.
@@ -673,9 +691,17 @@ napi_value init (napi_env env, napi_value exports) {
     napi_create_function(env, NULL, 0, AXGetMousePosition, NULL, &fn_AXGetMousePosition);
     napi_set_named_property(env, exports, "AXGetMousePosition", fn_AXGetMousePosition);
 
-    napi_value fn_AXRaiseAppWindow;
-    napi_create_function(env, NULL, 0, AXRaiseAppWindow, NULL, &fn_AXRaiseAppWindow);
-    napi_set_named_property(env, exports, "AXRaiseAppWindow", fn_AXRaiseAppWindow);
+    napi_value fn_AXPerformActionOnWindow;
+    napi_create_function(env, NULL, 0, AXPerformActionOnWindow, NULL, &fn_AXPerformActionOnWindow);
+    napi_set_named_property(env, exports, "AXPerformActionOnWindow", fn_AXPerformActionOnWindow);
+
+    napi_value const_ACTION_RAISE;
+    napi_create_int32(env, 1, &const_ACTION_RAISE);
+    napi_set_named_property(env, exports, "ACTION_RAISE", const_ACTION_RAISE);
+    
+    napi_value const_ACTION_CLOSE;
+    napi_create_int32(env, 2, &const_ACTION_CLOSE);
+    napi_set_named_property(env, exports, "ACTION_CLOSE", const_ACTION_CLOSE);
 
     napi_value fn_AXCheckIfStandardWindow;
     napi_create_function(env, NULL, 0, AXCheckIfStandardWindow, NULL, &fn_AXCheckIfStandardWindow);

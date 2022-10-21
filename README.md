@@ -5,9 +5,9 @@
 
 Adds window preview functionality on hover for Mac Dock, an open-source alternative.
 
-*Note: This is very early in development and may not work yet for your particular preferences (see below for known limitations and pending tasks). That said, give it a try and provide feedback if you can. Contributions are also welcome!*
-
 ![Image](./docs/image.png)
+
+*Note: M1 is not supported as I don't have an M1 Mac to test with. Contributors welcome to help resolve this!*
 
 ## Motivation
 
@@ -62,7 +62,6 @@ So after a lot of research, I decided to give it a try myself and to give it awa
 ## Task List
 
 * Figure out how to show windows from other spaces and how to focus on them.
-* Minimize and close windows from the previews.
 * Keyboard Controls.
 * Once there's a great user experience, investigate how to contribute to brew.
 * Support auto-hiding dock and dock in alternate locations.
