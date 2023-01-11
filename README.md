@@ -7,8 +7,6 @@ Adds window preview functionality on hover for Mac Dock, an open-source alternat
 
 ![Image](./docs/image.png)
 
-*Note: M1 is not supported as I don't have an M1 Mac to test with. Contributors welcome to help resolve this!*
-
 ## Motivation
 
 A long-time Windows user here, and I recently had to start using a Macbook, which has been a frustrating experience.
