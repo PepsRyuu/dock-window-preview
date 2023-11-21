@@ -9,15 +9,16 @@
     "dependencies": {
         "axlib": "file:axlib",
         "chokidar": "3.5.2",
-        "fetch-yode": "1.0.3",
-        "gui": "0.10.1"
+        "fetch-yode": "^1.1.1",
+        "gui": "^0.14.1"
     },
     "devDependencies": {
-        "yackage": "0.6.0"
+        "yackage": "^0.9.2"
     },
     "build": {
         "appId": "com.pepsryuu.dock-window-preview",
         "productName": "Dock Window Preview",
-        "copyright": "Copyright © 2021 PepsRyuu"
+        "copyright": "Copyright © 2021 PepsRyuu",
+        "ignore": ["axlib/build/node_gyp_bins/*"]
     }
 }

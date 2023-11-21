@@ -39,11 +39,11 @@ else
     ARCHITECTURE=$(uname -m)
 
     if [ $ARCHITECTURE == "x86_64" ]; then
-        curl https://nodejs.org/dist/v16.9.1/node-v16.9.1-darwin-x64.tar.gz --output node.tgz 
+        curl https://nodejs.org/dist/v20.9.0/node-v20.9.0-darwin-x64.tar.gz --output node.tgz 
     fi
 
     if [ $ARCHITECTURE == "arm64" ]; then
-        curl https://nodejs.org/dist/v16.9.1/node-v16.9.1-darwin-arm64.tar.gz --output node.tgz
+        curl https://nodejs.org/dist/v20.9.0/node-v20.9.0-darwin-arm64.tar.gz --output node.tgz
     fi
 
     tar -xzvf node.tgz -C node
@@ -52,6 +52,7 @@ else
 fi
 
 # Install dependencies and run the build
+echo "Installing dependencies and running build. This may take a while..."
 PATH=$(readlink -f $(dirname $NODE)):$PATH $NODE $NPM install
 PATH=$(readlink -f $(dirname $NODE)):$PATH $NODE $NPM run build
 

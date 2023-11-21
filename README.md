@@ -25,7 +25,7 @@ So after a lot of research, I decided to give it a try myself and to give it awa
 ## Getting Started
 
 * Ensure you have NodeJS installed. 
-* If Node is not installed, run ```brew install nvm``` then run ```nvm install 16``` and ```nvm use 16```.
+* If Node is not installed, run ```brew install nvm``` then run ```nvm install 20``` and ```nvm use 20```.
 * Clone the repository using ```git clone https://github.com/PepsRyuu/dock-window-preview.git```
 * Change into the directory using ```cd dock-window-preview```
 * Run ```npm install```, and then ```npm run build```.
@@ -49,6 +49,7 @@ So after a lot of research, I decided to give it a try myself and to give it awa
 ## Troubleshooting
 
 * If you rebuild the app, force quit the app using the Activity Monitor, and wipe out the permissions entirely, then run the app again.
+* There may be an incompatibility between `node-gyp` and `python3`. Ensure that the respective versions are compatible for installation to compile successfully.
 
 ## Acknowledgements
 
