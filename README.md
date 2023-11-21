@@ -45,6 +45,8 @@ So after a lot of research, I decided to give it a try myself and to give it awa
 * Config file is located in ```$HOME/.dock-window-preview/config.json```.
 * ```aliases``` allows mapping apps on the dock to their actual name. If a thumbnail isn't showing, see what it's called in the dock, and use Activity Monitor to find it's real name.
 * ```theme``` provides customisation to the visual appearance of the preview using hexadecimal colours in the format ```#AARRGGBB```.
+* ```layout``` specifies the positioning of the preview.
+    * ```dock``` can be one of the following: `bottom`, `left`, `right`
 
 ## Troubleshooting
 

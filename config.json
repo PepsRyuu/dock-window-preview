@@ -2,6 +2,9 @@
     "aliases": {
         "Visual Studio Code": "Code"
     },
+    "layout": {
+        "dock": "bottom"
+    },
     "theme": {
         "preview": {
             "border:color": "#ffffff",
