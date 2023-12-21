@@ -320,8 +320,22 @@ napi_value AXGetWindowPreview (napi_env env, napi_callback_info info) {
         int bitsPerComponent = CGImageGetBitsPerComponent(img);
         int bytesPerRow = CGImageGetBytesPerRow(img);
         CGColorSpaceRef colorSpace = CGImageGetColorSpace(img);
-        // TODO: Have the width and height as parameters
-        CGContextRef context = CGBitmapContextCreate(NULL, 500, 500, bitsPerComponent, bytesPerRow / CGImageGetWidth(img) * 500, colorSpace, CGImageGetBitmapInfo(img));
+
+        // Scale down the image to a fixed size but maintain the aspect ratio.
+        int nativeWidth = CGImageGetWidth(img);
+        int nativeHeight = CGImageGetHeight(img);
+        float scaleRatio = nativeWidth > nativeHeight? 500.0f / nativeWidth : 500.0f / nativeHeight;
+
+        CGContextRef context = CGBitmapContextCreate(
+            NULL, 
+            (int)(nativeWidth * scaleRatio), 
+            (int)(nativeHeight * scaleRatio), 
+            bitsPerComponent, 
+            bytesPerRow / nativeWidth * (int)(nativeWidth * scaleRatio), 
+            colorSpace, 
+            CGImageGetBitmapInfo(img)
+        );
+
         CGContextSetInterpolationQuality(context, kCGInterpolationHigh);
         CGContextDrawImage(context, CGContextGetClipBoundingBox(context), img);
 

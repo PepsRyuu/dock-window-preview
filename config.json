@@ -3,7 +3,8 @@
         "Visual Studio Code": "Code"
     },
     "layout": {
-        "dock": "bottom"
+        "dock": "bottom",
+        "preview": "fill"
     },
     "theme": {
         "preview": {

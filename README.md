@@ -47,6 +47,7 @@ So after a lot of research, I decided to give it a try myself and to give it awa
 * ```theme``` provides customisation to the visual appearance of the preview using hexadecimal colours in the format ```#AARRGGBB```.
 * ```layout``` specifies the positioning of the preview.
     * ```dock``` can be one of the following: `bottom`, `left`, `right`
+    * ```preview``` can be one of the following: `fill` (stretch previews to fill container), `fit` (maintain aspect ratio for previews and center).
 
 ## Troubleshooting
 
