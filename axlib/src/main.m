@@ -542,9 +542,18 @@ napi_value AXCheckIfStandardWindow (napi_env env, napi_callback_info info) {
         _AXUIElementGetWindow(windows[i], &current_wid);
 
         if (current_wid == wid) {
-            napi_value result;
-            napi_create_int32(env, 1, &result);
-            return result;
+            NSString* axSubrole;
+
+            if (AXUIElementCopyAttributeValue(windows[i], kAXSubroleAttribute, (CFTypeRef*)&axSubrole) == 0) {
+                bool isStandardWindow = !CFEqual(axSubrole, kAXUnknownSubrole);
+                CFRelease(axSubrole);
+
+                if (isStandardWindow) {
+                    napi_value result;
+                    napi_create_int32(env, 1, &result);
+                    return result;
+                }
+            }
         }
     }
 
