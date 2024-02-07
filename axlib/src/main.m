@@ -110,8 +110,8 @@ napi_value AXGetElementAtPosition (napi_env env, napi_callback_info info) {
     // Get X and Y params
     int x;
     int y;
-    napi_get_value_int64(env, args[0], &x);
-    napi_get_value_int64(env, args[1], &y);
+    napi_get_value_int32(env, args[0], &x);
+    napi_get_value_int32(env, args[1], &y);
 
     // This element will contain whatever we are hovering over.
     AXUIElementRef element = NULL;
@@ -254,7 +254,7 @@ napi_value AXGetWindowList (napi_env env, napi_callback_info info) {
         
             // Get the layer of the Window.
             napi_value result_entry_layer;
-            napi_create_int64(env, [[dict objectForKey:@"kCGWindowLayer"] intValue], &result_entry_layer);
+            napi_create_int32(env, [[dict objectForKey:@"kCGWindowLayer"] intValue], &result_entry_layer);
             napi_set_named_property(env, result_entry, "layer", result_entry_layer);
 
             // Get the PID of the Window
@@ -293,7 +293,7 @@ napi_value AXGetWindowPreview (napi_env env, napi_callback_info info) {
 
     // Extract the window ID parameter    
     int wid;
-    napi_get_value_int64(env, args[0], &wid);
+    napi_get_value_int32(env, args[0], &wid);
 
     // Generate the image. This will trigger permission request.
     CGImageRef img = NULL;
@@ -482,9 +482,9 @@ napi_value AXPerformActionOnWindow (napi_env env, napi_callback_info info) {
     int pid;
     int wid;
     int action;
-    napi_get_value_int64(env, args[0], &pid);
-    napi_get_value_int64(env, args[1], &wid);
-    napi_get_value_int64(env, args[2], &action);
+    napi_get_value_int32(env, args[0], &pid);
+    napi_get_value_int32(env, args[1], &wid);
+    napi_get_value_int32(env, args[2], &action);
 
     // This might look bizarre. Why create a separate class?
     // I think there's an C/ObjC interop issue? If I inline all of the code from this class into this function, the pid value will reset to 0.
@@ -515,8 +515,8 @@ napi_value AXCheckIfStandardWindow (napi_env env, napi_callback_info info) {
     // Extract the parameters
     int pid;
     int wid;
-    napi_get_value_int64(env, args[0], &pid);
-    napi_get_value_int64(env, args[1], &wid);
+    napi_get_value_int32(env, args[0], &pid);
+    napi_get_value_int32(env, args[1], &wid);
 
     AXUIElementRef element = AXUIElementCreateApplication(pid);
 
